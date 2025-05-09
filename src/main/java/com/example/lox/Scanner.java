@@ -53,10 +53,10 @@ public class Scanner {
     char c = advance();
     switch (c) {
       case '(':
-        addToken(TokenType.LEFT_PATTERN);
+        addToken(TokenType.LEFT_PAREN);
         break;
       case ')':
-        addToken(TokenType.RIGHT_PATTERN);
+        addToken(TokenType.RIGHT_PAREN);
         break;
       case '{':
         addToken(TokenType.LEFT_BRACE);
