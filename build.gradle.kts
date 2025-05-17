@@ -14,6 +14,12 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
+tasks.withType<Jar>() {
+    manifest {
+        attributes["Main-Class"] = "com.example.lox.Lox"
+    }
+}
+
 tasks.test {
     useJUnitPlatform()
 }
