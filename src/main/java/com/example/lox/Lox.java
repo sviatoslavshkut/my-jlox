@@ -63,6 +63,9 @@ public class Lox {
       return;
     }
 
+    Resolver resolver = new Resolver(interpreter);
+    resolver.resolve(statements);
+
     interpreter.interpret(statements);
   }
 
@@ -71,9 +74,7 @@ public class Lox {
   }
 
   private static void report(int line, String where, String message) {
-    System.err.println(
-        "[line " + line + "] Error" + where + ": " + message
-    );
+    System.err.println("[line " + line + "] Error" + where + ": " + message);
     hadError = true;
   }
 
@@ -90,3 +91,4 @@ public class Lox {
     hadRuntimeError = true;
   }
 }
+

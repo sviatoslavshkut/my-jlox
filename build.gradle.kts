@@ -1,12 +1,21 @@
 plugins {
     id("java")
+    id("eclipse")
 }
 
 group = "org.example"
 version = "1.0-SNAPSHOT"
 
+
 repositories {
     mavenCentral()
+}
+
+eclipse {
+  classpath {
+    downloadSources = true
+    downloadJavadoc = true
+  }
 }
 
 dependencies {
