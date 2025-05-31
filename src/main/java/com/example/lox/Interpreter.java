@@ -1,5 +1,8 @@
 package com.example.lox;
 
+import com.example.lox.Expr.Get;
+import com.example.lox.Expr.Set;
+import com.example.lox.Stmt.Class;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -315,7 +318,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   }
 
   void resolve(Expr expr, int depth) {
-    locals.put(expr, deps);
+    locals.put(expr, depth);
   }
 
   void executeBlock(List<Stmt> statements, Environment environment) {
@@ -328,6 +331,43 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
       }
     } finally {
       this.environment = previous;
+    }
+  }
+
+  @Override
+  public Void visitClassStmt(Class stmt) {
+    environment.define(stmt.name.lexeme, null);
+
+    Map<String, LoxFunction> methods = new HashMap<>();
+    for (Stmt.Function method : stmt.methods) {
+      LoxFunction function = new LoxFunction(method, environment);
+      methods.put(method.name.lexeme, function);
+    }
+    LoxClass klass = new LoxClass(stmt.name.lexeme, methods);
+    environment.assign(stmt.name, klass);
+    return null;
+  }
+
+  @Override
+  public Object visitGetExpr(Get expr) {
+    Object object = evaluate(expr.object);
+    if (object instanceof LoxInstance instance) {
+      return instance.get(expr.name);
+    }
+
+    throw new RuntimeError(expr.name, "Only instances have properties.");
+  }
+
+  @Override
+  public Object visitSetExpr(Set expr) {
+    Object object = evaluate(expr.object);
+
+    if (object instanceof LoxInstance instance) {
+      Object value = evaluate(expr.value);
+      instance.set(expr.name, value);
+      return value;
+    } else {
+      throw new RuntimeError(expr.name, "Only instances have fields.");
     }
   }
 }

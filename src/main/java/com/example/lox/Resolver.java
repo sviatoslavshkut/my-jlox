@@ -3,11 +3,14 @@ package com.example.lox;
 import com.example.lox.Expr.Assign;
 import com.example.lox.Expr.Binary;
 import com.example.lox.Expr.Call;
+import com.example.lox.Expr.Get;
 import com.example.lox.Expr.Grouping;
 import com.example.lox.Expr.Literal;
 import com.example.lox.Expr.Logical;
+import com.example.lox.Expr.Set;
 import com.example.lox.Expr.Unary;
 import com.example.lox.Expr.Variable;
+import com.example.lox.Stmt.Class;
 import com.example.lox.Stmt.Expression;
 import com.example.lox.Stmt.Function;
 import com.example.lox.Stmt.If;
@@ -32,7 +35,8 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
   private enum FunctionType {
     NONE,
-    FUNCTION
+    FUNCTION,
+    METHOD
   }
 
   void resolve(List<Stmt> statements) {
@@ -211,7 +215,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
   @Override
   public Void visitVariableExpr(Variable expr) {
-    if (scopes.isEmpty() && scopes.peek().get(expr.name.lexeme) == Boolean.FALSE) {
+    if (!scopes.isEmpty() && scopes.peek().get(expr.name.lexeme) == Boolean.FALSE) {
       Lox.error(expr.name, "Cannot read local variable in its own initializer.");
     }
 
@@ -222,6 +226,31 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
   @Override
   public Void visitUnaryExpr(Unary expr) {
     resolve(expr.right);
+    return null;
+  }
+
+  @Override
+  public Void visitClassStmt(Class stmt) {
+    declare(stmt.name);
+    define(stmt.name);
+
+    for (Stmt.Function method : stmt.methods) {
+      FunctionType declaration = FunctionType.METHOD;
+      resolveFunction(method, declaration);
+    }
+    return null;
+  }
+
+  @Override
+  public Void visitGetExpr(Get expr) {
+    resolve(expr.object);
+    return null;
+  }
+
+  @Override
+  public Void visitSetExpr(Set expr) {
+    resolve(expr.value);
+    resolve(expr.object);
     return null;
   }
 }

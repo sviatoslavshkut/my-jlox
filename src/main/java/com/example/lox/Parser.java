@@ -7,9 +7,7 @@ import java.util.List;
 
 public class Parser {
 
-  private static class ParseError extends RuntimeException {
-
-  }
+  private static class ParseError extends RuntimeException {}
 
   private final List<Token> tokens;
   private int current = 0;
@@ -33,6 +31,9 @@ public class Parser {
 
   private Stmt declaration() {
     try {
+      if (match(TokenType.CLASS)) {
+        return classDeclaration();
+      }
       if (match(TokenType.FUN)) {
         return function("function");
       }
@@ -44,6 +45,18 @@ public class Parser {
       synchronize();
       return null;
     }
+  }
+
+  private Stmt classDeclaration() {
+    Token name = consume(TokenType.IDENTIFIER, "Expect class name.");
+    consume(TokenType.LEFT_BRACE, "Expect '{' before class body.");
+    List<Stmt.Function> methods = new ArrayList<>();
+    while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+      methods.add(function("method"));
+    }
+    consume(TokenType.RIGHT_BRACE, "Expect '}' after classs body.");
+
+    return new Stmt.Class(name, methods);
   }
 
   private Stmt statement() {
@@ -95,9 +108,7 @@ public class Parser {
     Stmt body = statement();
 
     if (increment != null) {
-      body = new Stmt.Block(
-          Arrays.asList(body, new Stmt.Expression(increment))
-      );
+      body = new Stmt.Block(Arrays.asList(body, new Stmt.Expression(increment)));
     }
 
     if (condition == null) {
@@ -208,9 +219,10 @@ public class Parser {
       Token equals = previous();
       Expr value = assignment();
 
-      if (expr instanceof Expr.Variable) {
-        Token name = ((Expr.Variable) expr).name;
-        return new Expr.Assign(name, value);
+      if (expr instanceof Expr.Variable variable) {
+        return new Expr.Assign(variable.name, value);
+      } else if (expr instanceof Expr.Get get) {
+        return new Expr.Set(get.object, get.name, value);
       }
 
       error(equals, "Invalid assignment target.");
@@ -257,7 +269,8 @@ public class Parser {
   private Expr comparison() {
     Expr expr = term();
 
-    while (match(TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL)) {
+    while (match(
+        TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL)) {
       Token operator = previous();
       Expr right = term();
       expr = new Expr.Binary(expr, operator, right);
@@ -321,6 +334,9 @@ public class Parser {
     while (true) {
       if (match(TokenType.LEFT_PAREN)) {
         expr = finishCall(expr);
+      } else if (match(TokenType.DOT)) {
+        Token name = consume(TokenType.IDENTIFIER, "Expect property name after '.'.");
+        expr = new Expr.Get(expr, name);
       } else {
         break;
       }
